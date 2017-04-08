@@ -26,15 +26,14 @@ jobs:
     tasks:
       build and deploy:
         scripts:
-          'npm install':
-            # body: 'npm install --cache-min 3600'
-            body: 'true'
-          'build':
-            # body: 'npm run build-storybook'
-            body: 'mkdir "$BUILD_OUTPUT_DIR" && echo 'Hello World' > "$BUILD_OUTPUT_DIR/index.html" '
+          'npm-install':
+            body: 'npm install --cache-min 3600'
 
+          'build':
+            body: 'npm run build-storybook'
             start_when:
-              is installed: { script_key: 'npm install', states: ['passed'] }
+              is installed: { script_key: 'npm-install', states: ['passed'] }
+
           'deploy':
             start_when:
               is built: { script_key: 'build', states: ['passed'] }
@@ -55,19 +54,20 @@ jobs:
               # alias branch names, tree-id, latest version:
               ssh -T $HOSTNAME << EOF
                 set -exu
-                cd ${HOSTDIR}/branch
                 for B in ${BRANCHES}; do
-                  local dir_path="\$(dirname "\${B}")"
-                  rm -rf "\$dir_path"
-                  mkdir -p "\$dir_path"
-                  cd "\$dir_path"
-                  local link_path="\$(realpath --relative-to=. "${HOSTDIR}/tree/${TREE_ID}")"
-                  ln -s -n -f "\$link_path/${TREE_ID}" "$(basename "\${B}")"
-                  cd -
+                  cd ${HOSTDIR}/branch
+                  dir_path="\$(dirname "\${B}")"
+                  if [[ "\$dir_path" != "." ]]; then
+                    rm -rf "\$dir_path"
+                    mkdir -p "\$dir_path"
+                    cd "\$dir_path"
+                  fi
+                  link_path="\$(realpath --relative-to=. "${HOSTDIR}/tree/${TREE_ID}")"
+                  link_name="\$(basename "\${B}")"
+                  ln -s -n -f "\$link_path" "\$link_name"
                 done
-                cd ${HOSTDIR}/branch
-                cd tree && ln -s -n -f ${TREE_ID} ${TREE_SHORT} && cd ..
-                ln -s -n -f "branch/${LATEST_VERSION}" latest
+                cd ${HOSTDIR}/tree && ln -s -n -f ${TREE_ID} ${TREE_SHORT}
+                cd ${HOSTDIR} && ln -s -n -f "branch/${LATEST_VERSION}" latest
               EOF
 
               echo "✌︎ deployed ${TREE_SHORT} to ${HOSTNAME}"
