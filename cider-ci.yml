@@ -22,26 +22,28 @@ jobs:
         HOSTDIR: "/var/www/html/react-storybook-cider-ci-example"
         LATEST_VERSION: "master"
 
-    task: |
-      #!/bin/sh -exu
-      BRANCHES="$(node -p 'JSON.parse(process.env.CIDER_CI_CURRENT_BRANCH_HEADS).join(" ")')"
-      TREE="$(git log -n1 --format='%t')"
+    tasks:
+      build:
+        body: 'npm i -s && npm run -s build-storybook'
+      deploy:
+        start_when:
+          is built: { script_key: build, states: ['passed'] }
+        body: |
+          #!/bin/sh -exu
+          BRANCHES="$(node -p 'JSON.parse(process.env.CIDER_CI_CURRENT_BRANCH_HEADS).join(" ")')"
+          TREE="$(git log -n1 --format='%t')"
 
-      # build:
-      npm install
-      npm run -s build-storybook
+          # copy:
+          ssh $HOSTNAME "mkdir -p ${HOSTDIR}/tree ${HOSTDIR}/branch"
+          rsync -avPh storybook-static/ "${HOSTNAME}:${HOSTDIR}/tree/${TREE}/"
 
-      # copy:
-      ssh $HOSTNAME "mkdir -p ${HOSTDIR}/tree ${HOSTDIR}/branch"
-      rsync -avPh storybook-static/ "${HOSTNAME}:${HOSTDIR}/${TREE}/"
-
-      # alias branch names:
-      ssh -T $HOSTNAME << EOF
-        for B in ${BRANCHES}; do
-          ln -s -n -f ${HOSTDIR}/tree/${TREE} ${HOSTDIR}/branch/\${B}
-          if [[ '\${B}' = '${LATEST_VERSION}' ]]; then
-            ln -s -n -f ${HOSTDIR}/tree/${TREE} ${HOSTDIR}/latest
-          fi
-        done
-        echo 'deployed ${TREE} to ${HOSTNAME}'
-      EOF
+          # alias branch names:
+          ssh -T $HOSTNAME << EOF
+            for B in ${BRANCHES}; do
+              ln -s -n -f ${HOSTDIR}/tree/${TREE} ${HOSTDIR}/branch/\${B}
+              if [[ '\${B}' = '${LATEST_VERSION}' ]]; then
+                ln -s -n -f ${HOSTDIR}/tree/${TREE} ${HOSTDIR}/latest
+              fi
+            done
+            echo 'deployed ${TREE} to ${HOSTNAME}'
+          EOF
