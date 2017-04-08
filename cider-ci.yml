@@ -20,7 +20,7 @@ jobs:
       environment_variables:
         DEPLOY_HOSTNAME: "zhdk.kiste.li"
         DEPLOY_HOSTDIR: "/var/www/html/react-storybook-cider-ci-example2"
-        LATEST_VERSION_BRANCH: "master"
+        LATEST_VERSION_BRANCH: "hosting-subdirs"
         BUILD_OUTPUT_DIR: "storybook-static"
 
     tasks:
@@ -37,7 +37,7 @@ jobs:
               HOSTDIR="$DEPLOY_HOSTDIR"
               LATEST_VERSION="$LATEST_VERSION_BRANCH"
               TREE_ID=$CIDER_CI_TREE_ID
-              BUILD_DIR=$"BUILD_OUTPUT_DIR"
+              BUILD_DIR="$BUILD_OUTPUT_DIR"
               TREE_SHORT="$(git log -n1 --format='%t')"
               BRANCHES="$(node -p 'JSON.parse(process.env.CIDER_CI_CURRENT_BRANCH_HEADS).join(" ")')"
 
@@ -47,11 +47,14 @@ jobs:
 
               # alias branch names, tree-id, latest version:
               ssh -T $HOSTNAME << EOF
+                set -exu
+                cd ${HOSTDIR}/branch
                 for B in ${BRANCHES}; do
-                  ln -s -n -f ${HOSTDIR}/tree/${TREE_ID} "${HOSTDIR}/branch/\${B}"
+                  ln -s -n -f ../tree/${TREE_ID} "\${B}"
                 done
-                ln -s -n -f ${HOSTDIR}/tree/${TREE_ID} ${HOSTDIR}/tree/${TREE_SHORT}
-                ln -s -n -f "${HOSTDIR}/branch/${LATEST_VERSION}" ${HOSTDIR}/latest
+                cd ..
+                cd tree && ln -s -n -f ${TREE_ID} ${TREE_SHORT} && cd ..
+                ln -s -n -f "branch/${LATEST_VERSION}" latest
               EOF
 
               echo "✌︎ deployed ${TREE_SHORT} to ${HOSTNAME}"
