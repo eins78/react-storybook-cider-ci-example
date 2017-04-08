@@ -57,7 +57,7 @@ export default class Welcome extends React.Component {
   render() {
     return (
       <div style={styles.main}>
-        <h1>Welcome to STORYBOOK</h1>
+        <h1>Welcome to STORYBOOK, built and deployed by <a href="http://cider-ci.info">Cider-CI</a></h1>
         <p>
           This is a UI component dev environment for your app.
         </p>
