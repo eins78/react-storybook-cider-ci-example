@@ -54,6 +54,7 @@ jobs:
                 set -exu
                 cd ${HOSTDIR}/branch
                 for B in ${BRANCHES}; do
+                  mkdir -p "\${B}" && rm -rf "\${B}" # ensure path dirs exists
                   ln -s -n -f ../tree/${TREE_ID} "\${B}"
                 done
                 cd ..
