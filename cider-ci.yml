@@ -1,0 +1,46 @@
+---
+jobs:
+  build and deploy:
+    description: |
+      # ✌︎ react-storybook continuous hosting demo
+
+      > Builds [**react storybook**](http://getstorybook.io) and deploys it to a static file server using rsync.
+      >
+      > It keeps one version per tree-id (e.g. for stable links) and
+      > makes aliases for branch names (e.g. for bookmarks).
+
+    run_when:
+      any branch matches:
+        type: branch
+        include_match: "^.+$"
+
+    task_defaults:
+      # configure these values for your trusted exector and the target server
+      traits: { 'ssh_access_to_zhdk.kiste.li': yes }
+      environment_variables:
+        HOSTNAME: "zhdk.kiste.li"
+        HOSTDIR: "/var/www/html/react-storybook-cider-ci-example"
+
+    task: |
+      #!/bin/sh -exu
+      BRANCHES="$(node -p 'JSON.parse(process.env.CIDER_CI_CURRENT_BRANCH_HEADS).join(" ")')"
+      TREE="$(git log -n1 --format='%t')"
+
+      # build:
+      npm install
+      npm run -s build-storybook
+
+      # copy:
+      ssh $HOSTNAME "mkdir -p ${HOSTDIR}"
+      rsync -avPh storybook-static/ "${HOSTNAME}:${HOSTDIR}/${TREE}/"
+
+      # alias branch names:
+      ssh -T $HOSTNAME << EOF
+        for B in ${BRANCHES}; do
+          ln -s -n -f ${HOSTDIR}/${TREE} ${HOSTDIR}/\${B}
+          if [[ '\${B}' = 'master' ]]; then
+            ln -s -n -f ${HOSTDIR}/${TREE} ${HOSTDIR}/latest
+          fi
+        done
+        echo 'deployed ${TREE} to ${HOSTNAME}'
+      EOF
