@@ -18,30 +18,43 @@ jobs:
       # configure these values for your trusted exector and the target server
       traits: { 'ssh_access_to_zhdk.kiste.li': yes }
       environment_variables:
-        HOSTNAME: "zhdk.kiste.li"
-        HOSTDIR: "/var/www/html/react-storybook-cider-ci-example"
-        LATEST_VERSION: "master"
+        DEPLOY_HOSTNAME: "zhdk.kiste.li"
+        DEPLOY_HOSTDIR: "/var/www/html/react-storybook-cider-ci-example2"
+        LATEST_VERSION_BRANCH: "hosting-subdirs"
+        BUILD_OUTPUT_DIR: "storybook-static"
 
-    task: |
-      #!/bin/sh -exu
-      BRANCHES="$(node -p 'JSON.parse(process.env.CIDER_CI_CURRENT_BRANCH_HEADS).join(" ")')"
-      TREE="$(git log -n1 --format='%t')"
+    tasks:
+      build and deploy:
+        scripts:
+          'build':
+            body: 'npm i -s && npm run -s build-storybook'
+          'deploy':
+            start_when:
+              is built: { script_key: build, states: ['passed'] }
+            body: |
+              #!/bin/sh -exu
+              HOSTNAME="$DEPLOY_HOSTNAME"
+              HOSTDIR="$DEPLOY_HOSTDIR"
+              LATEST_VERSION="$LATEST_VERSION_BRANCH"
+              TREE_ID=$CIDER_CI_TREE_ID
+              BUILD_DIR="$BUILD_OUTPUT_DIR"
+              TREE_SHORT="$(git log -n1 --format='%t')"
+              BRANCHES="$(node -p 'JSON.parse(process.env.CIDER_CI_CURRENT_BRANCH_HEADS).join(" ")')"
 
-      # build:
-      npm install
-      npm run -s build-storybook
+              # copy:
+              ssh -T $HOSTNAME "mkdir -p ${HOSTDIR}/tree ${HOSTDIR}/branch"
+              rsync -avPh "${BUILD_DIR}/" "${HOSTNAME}:${HOSTDIR}/tree/${TREE_ID}/"
 
-      # copy:
-      ssh $HOSTNAME "mkdir -p ${HOSTDIR}/tree ${HOSTDIR}/branch"
-      rsync -avPh storybook-static/ "${HOSTNAME}:${HOSTDIR}/${TREE}/"
+              # alias branch names, tree-id, latest version:
+              ssh -T $HOSTNAME << EOF
+                set -exu
+                cd ${HOSTDIR}/branch
+                for B in ${BRANCHES}; do
+                  ln -s -n -f ../tree/${TREE_ID} "\${B}"
+                done
+                cd ..
+                cd tree && ln -s -n -f ${TREE_ID} ${TREE_SHORT} && cd ..
+                ln -s -n -f "branch/${LATEST_VERSION}" latest
+              EOF
 
-      # alias branch names:
-      ssh -T $HOSTNAME << EOF
-        for B in ${BRANCHES}; do
-          ln -s -n -f ${HOSTDIR}/tree/${TREE} ${HOSTDIR}/branch/\${B}
-          if [[ '\${B}' = '${LATEST_VERSION}' ]]; then
-            ln -s -n -f ${HOSTDIR}/tree/${TREE} ${HOSTDIR}/latest
-          fi
-        done
-        echo 'deployed ${TREE} to ${HOSTNAME}'
-      EOF
+              echo "✌︎ deployed ${TREE_SHORT} to ${HOSTNAME}"
