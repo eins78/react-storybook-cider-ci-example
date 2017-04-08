@@ -19,31 +19,33 @@ jobs:
       traits: { 'ssh_access_to_zhdk.kiste.li': yes }
       environment_variables:
         HOSTNAME: "zhdk.kiste.li"
-        HOSTDIR: "/var/www/html/react-storybook-cider-ci-example"
+        HOSTDIR: "/var/www/html/react-storybook-cider-ci-example2"
         LATEST_VERSION: "master"
 
     tasks:
-      build:
-        body: 'npm i -s && npm run -s build-storybook'
-      deploy:
-        start_when:
-          is built: { script_key: build, states: ['passed'] }
-        body: |
-          #!/bin/sh -exu
-          BRANCHES="$(node -p 'JSON.parse(process.env.CIDER_CI_CURRENT_BRANCH_HEADS).join(" ")')"
-          TREE="$(git log -n1 --format='%t')"
+      build and deploy:
+        scripts:
+          'build':
+            body: 'npm i -s && npm run -s build-storybook'
+          'deploy':
+            start_when:
+              is built: { script_key: build, states: ['passed'] }
+            body: |
+              #!/bin/sh -exu
+              BRANCHES="$(node -p 'JSON.parse(process.env.CIDER_CI_CURRENT_BRANCH_HEADS).join(" ")')"
+              TREE="$(git log -n1 --format='%t')"
 
-          # copy:
-          ssh $HOSTNAME "mkdir -p ${HOSTDIR}/tree ${HOSTDIR}/branch"
-          rsync -avPh storybook-static/ "${HOSTNAME}:${HOSTDIR}/tree/${TREE}/"
+              # copy:
+              ssh $HOSTNAME "mkdir -p ${HOSTDIR}/tree ${HOSTDIR}/branch"
+              rsync -avPh storybook-static/ "${HOSTNAME}:${HOSTDIR}/tree/${TREE}/"
 
-          # alias branch names:
-          ssh -T $HOSTNAME << EOF
-            for B in ${BRANCHES}; do
-              ln -s -n -f ${HOSTDIR}/tree/${TREE} ${HOSTDIR}/branch/\${B}
-              if [[ '\${B}' = '${LATEST_VERSION}' ]]; then
-                ln -s -n -f ${HOSTDIR}/tree/${TREE} ${HOSTDIR}/latest
-              fi
-            done
-            echo 'deployed ${TREE} to ${HOSTNAME}'
-          EOF
+              # alias branch names:
+              ssh -T $HOSTNAME << EOF
+                for B in ${BRANCHES}; do
+                  ln -s -n -f ${HOSTDIR}/tree/${TREE} "${HOSTDIR}/branch/\${B}"
+                  if [[ '\${B}' = '${LATEST_VERSION}' ]]; then
+                    ln -s -n -f ${HOSTDIR}/tree/${TREE} ${HOSTDIR}/latest
+                  fi
+                done
+                echo 'deployed ${TREE} to ${HOSTNAME}'
+              EOF
