@@ -1,3 +1,17 @@
+# how to try this example
+
+1. clone this project and add it to your [Cider-CI](http://cider-ci.info)
+1. pick a trusted executor
+    - give it ssh access to the target (web) server
+    - make sure it accepts the repository (`/cider-ci/executor/config/accepted-repositories.yml`)
+1. fill out the configuration (`task_defaults` in `cider-ci.yml`)
+1. push and wait.
+
+* example job run: <https://ci.zhdk.ch/cider-ci/ui/workspace/trees/aa8ebec35a2d8f5454a842d6367dc1f798f567af>
+* example output: <https://zhdk.kiste.li/react-storybook-cider-ci-example/>
+
+---
+
 This project was bootstrapped with [Create React App](https://github.com/facebookincubator/create-react-app).
 
 Below you will find some information on how to perform common tasks.<br>
@@ -1516,17 +1530,17 @@ When you build the project, Create React App will place the `public` folder cont
 2. Install `serve` by running `npm install --save serve`.
 
 3. Add this line to `scripts` in `package.json`:
-    
+
     ```
     "now-start": "serve build/",
     ```
-    
+
 4. Run `now` from your project directory. You will see a **now.sh** URL in your output like this:
-    
+
     ```
     > Ready! https://your-project-dirname-tpspyhtdtk.now.sh (copied to clipboard)
     ```
-    
+
     Paste that URL into your browser when the build is complete, and you will see your deployed app.
 
 Details are available in [this article.](https://zeit.co/blog/now-static)
