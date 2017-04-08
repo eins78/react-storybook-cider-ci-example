@@ -27,9 +27,12 @@ jobs:
       build and deploy:
         scripts:
           'npm install':
-            body: 'npm install --cache-min 3600'
+            # body: 'npm install --cache-min 3600'
+            body: 'true'
           'build':
-            body: 'npm run build-storybook'
+            # body: 'npm run build-storybook'
+            body: 'mkdir "$BUILD_OUTPUT_DIR" && echo 'Hello World' > "$BUILD_OUTPUT_DIR/index.html" '
+
             start_when:
               is installed: { script_key: 'npm install', states: ['passed'] }
           'deploy':
@@ -54,9 +57,15 @@ jobs:
                 set -exu
                 cd ${HOSTDIR}/branch
                 for B in ${BRANCHES}; do
-                  ln -s -n -f ../tree/${TREE_ID} "\${B}" || true # some branch names don't work, ignore
+                  local dir_path="\$(dirname "\${B}")"
+                  rm -rf "\$dir_path"
+                  mkdir -p "\$dir_path"
+                  cd "\$dir_path"
+                  local link_path="\$(realpath --relative-to=. "${HOSTDIR}/tree/${TREE_ID}")"
+                  ln -s -n -f "\$link_path/${TREE_ID}" "$(basename "\${B}")"
+                  cd -
                 done
-                cd ..
+                cd ${HOSTDIR}/branch
                 cd tree && ln -s -n -f ${TREE_ID} ${TREE_SHORT} && cd ..
                 ln -s -n -f "branch/${LATEST_VERSION}" latest
               EOF
