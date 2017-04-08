@@ -20,6 +20,7 @@ jobs:
       environment_variables:
         HOSTNAME: "zhdk.kiste.li"
         HOSTDIR: "/var/www/html/react-storybook-cider-ci-example"
+        LATEST_VERSION: "master"
 
     task: |
       #!/bin/sh -exu
@@ -31,15 +32,15 @@ jobs:
       npm run -s build-storybook
 
       # copy:
-      ssh $HOSTNAME "mkdir -p ${HOSTDIR}"
+      ssh $HOSTNAME "mkdir -p ${HOSTDIR}/tree ${HOSTDIR}/branch"
       rsync -avPh storybook-static/ "${HOSTNAME}:${HOSTDIR}/${TREE}/"
 
       # alias branch names:
       ssh -T $HOSTNAME << EOF
         for B in ${BRANCHES}; do
-          ln -s -n -f ${HOSTDIR}/${TREE} ${HOSTDIR}/\${B}
-          if [[ '\${B}' = 'master' ]]; then
-            ln -s -n -f ${HOSTDIR}/${TREE} ${HOSTDIR}/latest
+          ln -s -n -f ${HOSTDIR}/tree/${TREE} ${HOSTDIR}/branch/\${B}
+          if [[ '\${B}' = '${LATEST_VERSION}' ]]; then
+            ln -s -n -f ${HOSTDIR}/tree/${TREE} ${HOSTDIR}/latest
           fi
         done
         echo 'deployed ${TREE} to ${HOSTNAME}'
