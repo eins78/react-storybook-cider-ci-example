@@ -26,11 +26,15 @@ jobs:
     tasks:
       build and deploy:
         scripts:
+          'npm install':
+            body: 'npm install --cache-min 3600'
           'build':
-            body: 'npm install -s --cache-min 3600 && npm run -s build-storybook'
+            body: 'npm run build-storybook'
+            start_when:
+              is installed: { script_key: 'npm install', states: ['passed'] }
           'deploy':
             start_when:
-              is built: { script_key: build, states: ['passed'] }
+              is built: { script_key: 'build', states: ['passed'] }
             body: |
               #!/bin/sh -exu
               HOSTNAME="$DEPLOY_HOSTNAME"
