@@ -27,7 +27,7 @@ jobs:
       build and deploy:
         scripts:
           'build':
-            body: 'npm i -s && npm run -s build-storybook'
+            body: 'npm install -s --cache-min 3600 && npm run -s build-storybook'
           'deploy':
             start_when:
               is built: { script_key: build, states: ['passed'] }
