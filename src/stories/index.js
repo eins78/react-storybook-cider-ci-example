@@ -1,7 +1,15 @@
 import React from 'react';
-import { storiesOf, action, linkTo } from '@kadira/storybook';
+import { storiesOf, action, addDecorator, linkTo
+} from '@kadira/storybook';
 import Button from './Button';
 import Welcome from './Welcome';
+
+const CenterDecorator = (story) => (
+  <div style={{ textAlign: "center" }}>
+    {story()}
+  </div>
+);
+addDecorator(CenterDecorator);
 
 storiesOf('Welcome', module)
   .add('to Storybook', () => (
@@ -10,7 +18,7 @@ storiesOf('Welcome', module)
 
 storiesOf('Button', module)
   .add('with text', () => (
-    <Button onClick={action('clicked')}>Hello Button</Button>
+    <Button onClick={action('clicked')}>Es geht auch so</Button>
   ))
   .add('with some emoji', () => (
     <Button onClick={action('clicked')}>😀 😎 👍 💯</Button>
